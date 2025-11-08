@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aiflow"
+version = "0.0.1"
+description = "Open, research-friendly AI inference optimization framework"
+readme = "README.md"
+requires-python = ">=3.13"
+license = { text = "Apache-2.0" }
+authors = [
+  { name = "AIFlow Contributors" }
+]
+keywords = ["inference", "compiler", "optimization", "kernels", "auto-tuning", "profiling"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.13",
+  "License :: OSI Approved :: Apache Software License",
+  "Operating System :: OS Independent"
+]
+dependencies = [
+  "networkx",
+  "numpy",
+  "typer",
+  "prefect",
+  "boto3"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "ruff",
+  "mypy",
+  "pytest-cov"
+]
+
+[project.urls]
+Homepage = "https://github.com/xaiqo/AIFlow"
+Issues = "https://github.com/xaiqo/AIFlow/issues"
+
+[project.scripts]
+aiflow = "aiflow.cli.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+
