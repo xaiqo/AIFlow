@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import tempfile
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import boto3
 from prefect import flow, get_run_logger, task
@@ -84,7 +84,7 @@ def inference_optimization_flow(s3_uri: str, output_dir: str) -> str:
     metrics = profile_artifacts(artifact)
     tuned = autotune(ir_opt, metrics)
     out = export_results(output_dir, tuned)
-    return out
+    return cast(str, out)
 
 
 
