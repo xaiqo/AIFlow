@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Iterable, List, Protocol
+from collections.abc import Iterable
+from typing import Protocol
 
-from aiflow.ir.graph import Graph, Node
+from aiflow.ir.graph import Graph
 
 
 class Candidate(Protocol):
@@ -26,7 +27,7 @@ class Pass(ABC):
 class Pipeline:
     """An ordered sequence of passes."""
 
-    def __init__(self, passes: List[Pass]) -> None:
+    def __init__(self, passes: list[Pass]) -> None:
         self._passes = passes
 
     def run(self, graph: Graph) -> Graph:
@@ -34,5 +35,7 @@ class Pipeline:
             for c in list(p.match(graph)):
                 p.apply(graph, c)
         return graph
+
+
 
 

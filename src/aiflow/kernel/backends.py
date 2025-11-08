@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, Protocol
+from typing import Protocol
 
 
 @dataclass
@@ -10,7 +10,7 @@ class BackendCapabilities:
     vector_width: int | None = None
     has_tensor_cores: bool = False
     max_threads: int | None = None
-    metadata: Dict[str, str] | None = None
+    metadata: dict[str, str] | None = None
 
 
 class Backend(Protocol):
@@ -18,7 +18,7 @@ class Backend(Protocol):
 
     def capabilities(self) -> BackendCapabilities: ...
 
-    def generate(self, schedule: "Schedule") -> "Artifact": ...
+    def generate(self, schedule: Schedule) -> Artifact: ...
 
 
 @dataclass
@@ -31,6 +31,8 @@ class Schedule:
 class Artifact:
     """Kernel artifact container."""
     source: str
-    metadata: Dict[str, str]
+    metadata: dict[str, str]
+
+
 
 

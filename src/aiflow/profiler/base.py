@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Dict, Mapping
+from collections.abc import Mapping
 
 
 class ProfileResult:
@@ -13,7 +13,9 @@ class Profiler(ABC):
     """Base class for profiling."""
 
     @abstractmethod
-    def run(self, artifact: "object") -> ProfileResult:
+    def run(self, artifact: object) -> ProfileResult:
         raise NotImplementedError
+
+
 
 

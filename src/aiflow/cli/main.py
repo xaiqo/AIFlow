@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import typer
 
-from aiflow import version
 from aiflow.flows.pipeline import inference_optimization_flow
 
 app = typer.Typer(help="AIFlow CLI")

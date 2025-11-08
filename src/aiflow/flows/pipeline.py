@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import tempfile
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 import boto3
-from prefect import flow, task, get_run_logger
+from prefect import flow, get_run_logger, task
 
 
 @task
@@ -27,7 +27,7 @@ def download_from_s3(s3_uri: str) -> Path:
 
 
 @task
-def parse_model(local_path: Path) -> Dict[str, Any]:
+def parse_model(local_path: Path) -> dict[str, Any]:
     logger = get_run_logger()
     logger.info(f"Parsing model at {local_path}")
     # Placeholder: return minimal IR-like dict
@@ -35,35 +35,35 @@ def parse_model(local_path: Path) -> Dict[str, Any]:
 
 
 @task
-def optimize_graph(ir: Dict[str, Any]) -> Dict[str, Any]:
+def optimize_graph(ir: dict[str, Any]) -> dict[str, Any]:
     logger = get_run_logger()
     logger.info("Running graph optimization passes")
     return ir
 
 
 @task
-def optimize_kernels(ir: Dict[str, Any]) -> Dict[str, Any]:
+def optimize_kernels(ir: dict[str, Any]) -> dict[str, Any]:
     logger = get_run_logger()
     logger.info("Generating and optimizing kernels")
     return {"artifact": {"source": "// kernel source"}, "ir": ir}
 
 
 @task
-def profile_artifacts(artifact: Dict[str, Any]) -> Dict[str, float]:
+def profile_artifacts(artifact: dict[str, Any]) -> dict[str, float]:
     logger = get_run_logger()
     logger.info("Profiling artifacts")
     return {"latency_ms": 0.0, "throughput_qps": 0.0}
 
 
 @task
-def autotune(ir: Dict[str, Any], metrics: Dict[str, float]) -> Dict[str, Any]:
+def autotune(ir: dict[str, Any], metrics: dict[str, float]) -> dict[str, Any]:
     logger = get_run_logger()
     logger.info("Auto-tuning configuration")
     return {"best_config": {}, "metrics": metrics}
 
 
 @task
-def export_results(output_dir: str, results: Dict[str, Any]) -> str:
+def export_results(output_dir: str, results: dict[str, Any]) -> str:
     out_path = Path(output_dir)
     out_path.mkdir(parents=True, exist_ok=True)
     result_file = out_path / "results.json"
@@ -85,5 +85,7 @@ def inference_optimization_flow(s3_uri: str, output_dir: str) -> str:
     tuned = autotune(ir_opt, metrics)
     out = export_results(output_dir, tuned)
     return out
+
+
 
 
