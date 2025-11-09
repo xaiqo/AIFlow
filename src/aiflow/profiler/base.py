@@ -15,7 +15,3 @@ class Profiler(ABC):
     @abstractmethod
     def run(self, artifact: object) -> ProfileResult:
         raise NotImplementedError
-
-
-
-

@@ -24,15 +24,13 @@ class Backend(Protocol):
 @dataclass
 class Schedule:
     """Skeleton schedule representation."""
+
     description: str
 
 
 @dataclass
 class Artifact:
     """Kernel artifact container."""
+
     source: str
     metadata: dict[str, str]
-
-
-
-

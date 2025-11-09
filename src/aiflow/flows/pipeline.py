@@ -85,7 +85,3 @@ def inference_optimization_flow(s3_uri: str, output_dir: str) -> str:
     tuned = autotune(ir_opt, metrics)
     out = export_results(output_dir, tuned)
     return cast(str, out)
-
-
-
-
