@@ -14,6 +14,10 @@ Start here:
 - Plugin System: `docs/architecture/plugin-system.md`
 - Data Flow: `docs/architecture/data-flow.md`
 
+Parsers (current status)
+- ONNX: MVP supported (Conv, BatchNormalization, Relu, Add, MatMul, Pool, Reshape, Transpose)
+- PyTorch / TensorFlow: planned
+
 Your original documents are preserved:
 - `docs/core.md`
 - `docs/topic.md`

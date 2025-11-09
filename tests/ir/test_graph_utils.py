@@ -65,4 +65,3 @@ def test_extract_subgraph_middle_chain() -> None:
     assert "b" in sub.inputs
     assert "c" in sub.outputs
     assert len(sub.nodes) == 1 and sub.nodes[0].op_type == "B"
-

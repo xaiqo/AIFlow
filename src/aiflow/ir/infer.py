@@ -70,35 +70,66 @@ def infer_relu(graph: Graph, node: Node) -> None:
 @register_shape_inference("MatMul")
 def infer_matmul(graph: Graph, node: Node) -> None:
     if len(node.inputs) != 2 or len(node.outputs) != 1:
-        raise InferenceError("MatMul expects 2 inputs and 1 output", code="EMATMUL_ARITY")
+        raise InferenceError(
+            "MatMul expects 2 inputs and 1 output", code="EMATMUL_ARITY"
+        )
     a = graph.tensors[node.inputs[0]]
     b = graph.tensors[node.inputs[1]]
     out = graph.tensors[node.outputs[0]]
     if len(a.shape) < 2 or len(b.shape) < 2:
-        raise InferenceError("MatMul requires tensors with rank >= 2", code="EMATMUL_RANK")
+        raise InferenceError(
+            "MatMul requires tensors with rank >= 2", code="EMATMUL_RANK"
+        )
     a_batch = a.shape[:-2]
     b_batch = b.shape[:-2]
     batch = _broadcast_shape(a_batch, b_batch)
     m, k1 = a.shape[-2], a.shape[-1]
     k2, n = b.shape[-2], b.shape[-1]
     if k1 != k2:
-        raise InferenceError(f"Incompatible MatMul inner dims: {k1} vs {k2}", code="EMATMUL_DIMS")
+        raise InferenceError(
+            f"Incompatible MatMul inner dims: {k1} vs {k2}", code="EMATMUL_DIMS"
+        )
     out.shape = list(batch) + [m, n]
     out.dtype = _promote_dtype(a.dtype, b.dtype)
 
 
 @register_shape_inference("Reshape")
 def infer_reshape(graph: Graph, node: Node) -> None:
-    if len(node.inputs) != 1 or len(node.outputs) != 1:
-        raise InferenceError("Reshape expects 1 input and 1 output", code="ERESHAPE_ARITY")
+    if len(node.outputs) != 1 or len(node.inputs) not in (1, 2):
+        raise InferenceError(
+            "Reshape expects 1 or 2 inputs and 1 output", code="ERESHAPE_ARITY"
+        )
     x = graph.tensors[node.inputs[0]]
     out = graph.tensors[node.outputs[0]]
     target = node.attributes.get("shape")
+    if target is None and len(node.inputs) == 2:
+        # Try to read shape from second input tensor's const metadata
+        shape_input = graph.tensors.get(node.inputs[1])
+        if shape_input is not None:
+            const_val = shape_input.metadata.get("const")
+            if isinstance(const_val, list):
+                # Flatten one level if nested
+                if const_val and isinstance(const_val[0], list):
+                    flat = []
+                    for v in const_val[0]:
+                        try:
+                            flat.append(int(v))
+                        except Exception:
+                            pass
+                    const_val = flat
+                try:
+                    target = [int(v) for v in const_val]
+                except Exception as _:
+                    target = None
     if not isinstance(target, list) or not all(isinstance(d, int) for d in target):
-        raise InferenceError("Reshape requires 'shape' attribute (list[int])", code="ERESHAPE_ATTR")
+        raise InferenceError(
+            "Reshape requires 'shape' attribute (list[int])", code="ERESHAPE_ATTR"
+        )
     neg_one_count = sum(1 for d in target if d == -1)
     if neg_one_count > 1:
-        raise InferenceError("Reshape 'shape' may contain at most one -1", code="ERESHAPE_NEG1")
+        raise InferenceError(
+            "Reshape 'shape' may contain at most one -1", code="ERESHAPE_NEG1"
+        )
     known = [d for d in target if d != -1]
     if any(d <= 0 for d in known):
         raise InferenceError(
@@ -108,12 +139,16 @@ def infer_reshape(graph: Graph, node: Node) -> None:
     total_in = prod(x.shape) if x.shape else 0
     if neg_one_count == 0:
         if prod(target) != total_in:
-            raise InferenceError("Reshape element count mismatch", code="ERESHAPE_COUNT")
+            raise InferenceError(
+                "Reshape element count mismatch", code="ERESHAPE_COUNT"
+            )
         out.shape = list(target)
     else:
         known_prod = prod(known) if known else 1
         if total_in % known_prod != 0:
-            raise InferenceError("Reshape cannot infer -1 dimension", code="ERESHAPE_INF")
+            raise InferenceError(
+                "Reshape cannot infer -1 dimension", code="ERESHAPE_INF"
+            )
         inferred = total_in // known_prod
         new_shape: list[int] = []
         used_infer = False
@@ -130,15 +165,19 @@ def infer_reshape(graph: Graph, node: Node) -> None:
 @register_shape_inference("Transpose")
 def infer_transpose(graph: Graph, node: Node) -> None:
     if len(node.inputs) != 1 or len(node.outputs) != 1:
-        raise InferenceError("Transpose expects 1 input and 1 output", code="ETRANSPOSE_ARITY")
+        raise InferenceError(
+            "Transpose expects 1 input and 1 output", code="ETRANSPOSE_ARITY"
+        )
     x = graph.tensors[node.inputs[0]]
     out = graph.tensors[node.outputs[0]]
     rank = len(x.shape)
     perm = node.attributes.get("perm")
     if perm is None:
         perm = list(reversed(range(rank)))
-    if not isinstance(perm, list) or len(perm) != rank or any(
-        not isinstance(p, int) or p < 0 or p >= rank for p in perm
+    if (
+        not isinstance(perm, list)
+        or len(perm) != rank
+        or any(not isinstance(p, int) or p < 0 or p >= rank for p in perm)
     ):
         raise InferenceError("Invalid Transpose perm", code="ETRANSPOSE_PERM")
     out.shape = [x.shape[i] for i in perm]
@@ -201,7 +240,9 @@ def infer_maxpool(graph: Graph, node: Node) -> None:
 @register_shape_inference("AveragePool")
 def infer_avgpool(graph: Graph, node: Node) -> None:
     if len(node.inputs) != 1 or len(node.outputs) != 1:
-        raise InferenceError("AveragePool expects 1 input and 1 output", code="EPOOL_ARITY")
+        raise InferenceError(
+            "AveragePool expects 1 input and 1 output", code="EPOOL_ARITY"
+        )
     x = graph.tensors[node.inputs[0]]
     out = graph.tensors[node.outputs[0]]
     kernel = _get_list_attr(node, "kernel_shape", [])
@@ -216,7 +257,9 @@ def infer_avgpool(graph: Graph, node: Node) -> None:
 @register_shape_inference("Concat")
 def infer_concat(graph: Graph, node: Node) -> None:
     if len(node.outputs) != 1 or len(node.inputs) < 1:
-        raise InferenceError("Concat expects N inputs and 1 output", code="ECONCAT_ARITY")
+        raise InferenceError(
+            "Concat expects N inputs and 1 output", code="ECONCAT_ARITY"
+        )
     tensors = [graph.tensors[name] for name in node.inputs]
     out = graph.tensors[node.outputs[0]]
     rank = len(tensors[0].shape)
@@ -254,5 +297,3 @@ def infer_graph(graph: Graph) -> None:
             # Unknown op: leave shapes as-is
             continue
         fn(graph, node)
-
-

@@ -32,7 +32,8 @@ dev = [
   "pytest",
   "ruff",
   "mypy",
-  "pytest-cov"
+  "pytest-cov",
+  "onnx"
 ]
 
 [project.urls]

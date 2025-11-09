@@ -47,5 +47,3 @@ def test_dce_removes_unused_nodes() -> None:
     # Expect only two nodes left (A and B)
     assert len(g.nodes) == 2
     assert [n.op_type for n in g.nodes] == ["A", "B"]
-
-

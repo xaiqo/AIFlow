@@ -11,6 +11,7 @@ Design Principles
 
 Core Packages
 - `aiflow.parsers`: Normalizes external models into the Graph IR.
+  - ONNX parser MVP supported (Conv/BN/Relu/Add/MatMul/Pool/Reshape/Transpose)
 - `aiflow.ir`: Multi-level IR (HIR/MIR/LIR) with metadata and analysis utilities.
 - `aiflow.optimizer`: Graph-pass framework (fusion, quantization, pruning, layout).
 - `aiflow.kernel`: Kernel scheduling, tiling, vectorization, and backend integration.

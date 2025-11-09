@@ -17,7 +17,3 @@ class Parser(ABC):
 class GraphIR:  # minimal placeholder for type reference
     def __init__(self, metadata: dict[str, Any] | None = None) -> None:
         self.metadata = metadata or {}
-
-
-
-

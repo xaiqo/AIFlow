@@ -1,5 +1,1 @@
 """Plugin registration and discovery."""
-
-
-
-

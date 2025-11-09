@@ -37,8 +37,7 @@ class ConstantFoldingPass(Pass):
                 continue
             # All inputs must be constants
             inputs_are_const = all(
-                _get_const_tensor(graph, name) is not None
-                for name in node.inputs
+                _get_const_tensor(graph, name) is not None for name in node.inputs
             )
             if inputs_are_const:
                 yield idx
@@ -64,7 +63,9 @@ class ConstantFoldingPass(Pass):
             perm = node.attributes.get("perm")
             if perm is None:
                 perm = list(reversed(range(x.ndim)))
-            graph.tensors[out_name].metadata["const"] = np.transpose(x, axes=perm).tolist()
+            graph.tensors[out_name].metadata["const"] = np.transpose(
+                x, axes=perm
+            ).tolist()
         # Optionally mark node as folded
         node.metadata["folded"] = True
 
@@ -105,5 +106,3 @@ class DeadCodeEliminationPass(Pass):
         # Remove nodes in reverse order to keep indices stable
         for idx in sorted(candidate, reverse=True):
             del graph.nodes[idx]
-
-

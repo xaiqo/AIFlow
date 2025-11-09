@@ -155,5 +155,3 @@ def extract_subgraph(graph: Graph, node_indices: set[int]) -> Graph:
     new_graph.outputs = outputs
 
     return new_graph
-
-

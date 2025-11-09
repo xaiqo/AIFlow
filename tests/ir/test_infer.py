@@ -55,6 +55,7 @@ def test_infer_add_mismatch_raises() -> None:
     with pytest.raises(InferenceError):
         infer_graph(g)
 
+
 def test_infer_reshape_with_infer_dim() -> None:
     g = Graph()
     g.add_tensor(t("x", [2, 3, 4]))
@@ -98,5 +99,3 @@ def test_infer_concat_axis() -> None:
     g.add_node(Node("Concat", ["a", "b"], ["c"], attributes={"axis": 1}))
     infer_graph(g)
     assert g.tensors["c"].shape == [1, 7, 3]
-
-

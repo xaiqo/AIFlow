@@ -13,8 +13,10 @@ def hello() -> None:
 
 
 @app.command()
-def run(s3_uri: str = typer.Argument(..., help="S3 URI to model, e.g. s3://bucket/key"),
-        output_dir: str = typer.Option("./outputs", help="Directory to write results")) -> None:
+def run(
+    s3_uri: str = typer.Argument(..., help="S3 URI to model, e.g. s3://bucket/key"),
+    output_dir: str = typer.Option("./outputs", help="Directory to write results"),
+) -> None:
     """
     Run the Prefect flow to process a model from S3.
     """
@@ -28,5 +30,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
-

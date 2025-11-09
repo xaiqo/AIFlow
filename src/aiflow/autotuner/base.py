@@ -9,6 +9,7 @@ from typing import Any
 @dataclass
 class TunableConfig:
     """Represents a set of tunable parameters."""
+
     values: dict[str, Any]
 
 
@@ -22,7 +23,3 @@ class SearchStrategy(ABC):
     @abstractmethod
     def suggest(self, previous: list[TunableConfig]) -> TunableConfig:
         raise NotImplementedError
-
-
-
-
