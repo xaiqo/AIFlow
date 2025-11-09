@@ -114,6 +114,18 @@ class OnnxParser:
                 t.shape = t.shape or shape
             g.outputs.append(name)
 
+        # ValueInfo (intermediate tensors with shapes/dtypes)
+        for vi in model.graph.value_info:
+            name = vi.name
+            dtype = _dtype_from_value_info(vi) or "float32"
+            shape = _shape_from_value_info(vi) or [1]
+            if name not in g.tensors:
+                g.add_tensor(Tensor(name=name, dtype=dtype, shape=shape))
+            else:
+                t = g.tensors[name]
+                t.dtype = t.dtype or dtype
+                t.shape = t.shape or shape
+
         # Nodes -> IR nodes and ensure output tensors exist
         for n in model.graph.node:
             attrs = _parse_attributes(n)

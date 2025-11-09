@@ -7,6 +7,9 @@ from typing import Any, cast
 import boto3
 from prefect import flow, get_run_logger, task
 
+from aiflow.ir import Graph
+from aiflow.parsers.onnx import OnnxParser
+
 
 @task
 def download_from_s3(s3_uri: str) -> Path:
@@ -27,22 +30,25 @@ def download_from_s3(s3_uri: str) -> Path:
 
 
 @task
-def parse_model(local_path: Path) -> dict[str, Any]:
+def parse_model(local_path: Path) -> Graph:
     logger = get_run_logger()
     logger.info(f"Parsing model at {local_path}")
-    # Placeholder: return minimal IR-like dict
-    return {"graph": {"nodes": [], "tensors": {}}, "source": str(local_path)}
+    if local_path.suffix.lower() == ".onnx":
+        ir = OnnxParser().parse(str(local_path), validate_and_infer=True)
+        return ir
+    # Fallback: empty graph
+    return Graph()
 
 
 @task
-def optimize_graph(ir: dict[str, Any]) -> dict[str, Any]:
+def optimize_graph(ir: Graph) -> Graph:
     logger = get_run_logger()
     logger.info("Running graph optimization passes")
     return ir
 
 
 @task
-def optimize_kernels(ir: dict[str, Any]) -> dict[str, Any]:
+def optimize_kernels(ir: Graph) -> dict[str, Any]:
     logger = get_run_logger()
     logger.info("Generating and optimizing kernels")
     return {"artifact": {"source": "// kernel source"}, "ir": ir}

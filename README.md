@@ -15,6 +15,7 @@ Key Capabilities (planned)
 - Hardware profiling: static + dynamic profiling, roofline, simulation
 - Auto-tuning: ML-guided search (Bayesian/RL/genetic)
 - Orchestration: Prefect flows with S3 ingestion; artifacts for a Web UI
+ - Parsers: ONNX MVP (Conv/BN/Relu/Add/MatMul/Pool/Reshape/Transpose)
 
 Repository Structure
 
@@ -67,6 +68,7 @@ pytest -q
 ```
 aiflow run s3://your-bucket/your-model.onnx --output-dir ./outputs
 ```
+The flow will automatically detect `.onnx` and parse it via the ONNX parser, validate, and infer shapes.
 
 Contributing
 - Read CONTRIBUTING.md for environment setup, style, commit conventions, and PR process.
