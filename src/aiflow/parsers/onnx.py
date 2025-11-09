@@ -5,7 +5,7 @@ from typing import Any
 import onnx
 from onnx import numpy_helper
 
-from aiflow.ir import Graph, Node, Tensor
+from aiflow.ir import Graph, GraphValidator, Node, Tensor, infer_graph
 
 _DTYPE_MAP = {
     onnx.TensorProto.FLOAT: "float32",
@@ -67,7 +67,7 @@ def _parse_attributes(node: onnx.NodeProto) -> dict[str, Any]:
 class OnnxParser:
     """Parse an ONNX model into AIFlow IR Graph (MVP subset)."""
 
-    def parse(self, model_or_path: Any) -> Graph:
+    def parse(self, model_or_path: Any, *, validate_and_infer: bool = True) -> Graph:
         model = self._load_model(model_or_path)
         g = Graph()
 
@@ -135,6 +135,10 @@ class OnnxParser:
                     # Create placeholder tensor; shapes may be inferred later
                     g.add_tensor(Tensor(name=out_name, dtype="float32", shape=[1]))
 
+        if validate_and_infer:
+            # Basic validation then shape/dtype inference to populate internal tensors
+            GraphValidator(g).validate()
+            infer_graph(g)
         return g
 
     def _load_model(self, model_or_path: Any) -> onnx.ModelProto:

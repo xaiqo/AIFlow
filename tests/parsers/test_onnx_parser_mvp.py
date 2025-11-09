@@ -108,3 +108,20 @@ def test_parse_maxpool_attrs() -> None:
     assert n.attributes.get("kernel_shape") == [2, 2]
     assert n.attributes.get("strides") == [2, 2]
     GraphValidator(ir).validate()
+
+
+def test_parse_infers_internal_tensor_shapes() -> None:
+    # x (2,3,4) + b (1,3,1) -> c; Relu(c) -> y. Only y is graph output.
+    x_info = helper.make_tensor_value_info("x", TensorProto.FLOAT, [2, 3, 4])
+    b_info = helper.make_tensor_value_info("b", TensorProto.FLOAT, [1, 3, 1])
+    y_info = helper.make_tensor_value_info("y", TensorProto.FLOAT, [2, 3, 4])
+    add = helper.make_node("Add", ["x", "b"], ["c"])
+    relu = helper.make_node("Relu", ["c"], ["y"])
+    graph = helper.make_graph([add, relu], "chain", [x_info, b_info], [y_info])
+    model = helper.make_model(graph)
+
+    ir = OnnxParser().parse(model)  # validate_and_infer=True by default
+    # 'c' is internal; parser created placeholder but inference should populate shape
+    assert "c" in ir.tensors
+    assert ir.tensors["c"].shape == [2, 3, 4]
+    GraphValidator(ir).validate()
