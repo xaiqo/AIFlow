@@ -73,6 +73,7 @@ class OnnxParser:
 
         # Initializers -> tensors with const metadata
         init_names: set[str] = set()
+        init_arrays: dict[str, list] = {}
         for init in model.graph.initializer:
             name = init.name
             init_names.add(name)
@@ -87,6 +88,7 @@ class OnnxParser:
                     metadata={"const": arr.tolist()},
                 )
             )
+            init_arrays[name] = arr.tolist()
 
         # Inputs -> tensors (skip ones that are initializers)
         for inp in model.graph.input:
@@ -115,6 +117,11 @@ class OnnxParser:
         # Nodes -> IR nodes and ensure output tensors exist
         for n in model.graph.node:
             attrs = _parse_attributes(n)
+            # Special-case: Reshape often uses the 2nd input as the target shape tensor
+            if n.op_type == "Reshape" and len(n.input) >= 2:
+                shape_name = n.input[1]
+                if shape_name in init_arrays:
+                    attrs["shape"] = list(init_arrays[shape_name])
             g.add_node(
                 Node(
                     op_type=n.op_type,
@@ -138,5 +145,3 @@ class OnnxParser:
         if isinstance(model_or_path, str):
             return onnx.load(model_or_path)
         raise TypeError("Unsupported model type for ONNX parser")
-
-

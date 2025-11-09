@@ -8,16 +8,20 @@ from aiflow.ir import GraphValidator
 from aiflow.parsers.onnx import OnnxParser
 
 
-def _make_tensor_value_info(name: str, dtype: int, shape: list[int]) -> onnx.ValueInfoProto:
+def _make_tensor_value_info(
+    name: str, dtype: int, shape: list[int]
+) -> onnx.ValueInfoProto:
     return helper.make_tensor_value_info(name, dtype, shape)
 
 
 def _make_initializer(name: str, array: np.ndarray) -> onnx.TensorProto:
     return helper.make_tensor(
         name=name,
-        data_type=TensorProto.DataType.Name(array.dtype.type).index(array.dtype.type.__name__)
-        if hasattr(TensorProto, "DataType")
-        else TensorProto.FLOAT,
+        data_type=(
+            TensorProto.DataType.Name(array.dtype.type).index(array.dtype.type.__name__)
+            if hasattr(TensorProto, "DataType")
+            else TensorProto.FLOAT
+        ),
         dims=list(array.shape),
         vals=array.flatten().tolist(),
     )
@@ -67,3 +71,40 @@ def test_parse_with_graph_input_and_output() -> None:
     GraphValidator(ir).validate()
 
 
+def test_parse_reshape_with_shape_initializer() -> None:
+    # x -> Reshape -> y, with shape provided as initializer s
+    x_info = helper.make_tensor_value_info("x", TensorProto.FLOAT, [2, 3, 4])
+    y_info = helper.make_tensor_value_info("y", TensorProto.FLOAT, [4, 6, 1])
+    s = helper.make_tensor("s", TensorProto.INT64, [3], [-1, 6, 1])
+    node = helper.make_node("Reshape", inputs=["x", "s"], outputs=["y"])
+    graph = helper.make_graph(
+        [node], "reshape_graph", [x_info], [y_info], initializer=[s]
+    )
+    model = helper.make_model(graph)
+
+    ir = OnnxParser().parse(model)
+    assert ir.nodes[0].op_type == "Reshape"
+    # Ensure 'shape' attribute was captured from initializer
+    assert ir.nodes[0].attributes.get("shape") == [-1, 6, 1]
+    GraphValidator(ir).validate()
+
+
+def test_parse_maxpool_attrs() -> None:
+    x_info = helper.make_tensor_value_info("x", TensorProto.FLOAT, [1, 3, 32, 32])
+    y_info = helper.make_tensor_value_info("y", TensorProto.FLOAT, [1, 3, 16, 16])
+    node = helper.make_node(
+        "MaxPool",
+        inputs=["x"],
+        outputs=["y"],
+        kernel_shape=[2, 2],
+        strides=[2, 2],
+    )
+    graph = helper.make_graph([node], "pool_graph", [x_info], [y_info])
+    model = helper.make_model(graph)
+
+    ir = OnnxParser().parse(model)
+    n = ir.nodes[0]
+    assert n.op_type == "MaxPool"
+    assert n.attributes.get("kernel_shape") == [2, 2]
+    assert n.attributes.get("strides") == [2, 2]
+    GraphValidator(ir).validate()
