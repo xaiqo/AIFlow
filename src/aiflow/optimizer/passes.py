@@ -32,8 +32,13 @@ class Pipeline:
 
     def run(self, graph: Graph) -> Graph:
         for p in self._passes:
-            for c in list(p.match(graph)):
-                p.apply(graph, c)
+            # Run each pass to a fixed point
+            while True:
+                candidates = list(p.match(graph))
+                if not candidates:
+                    break
+                for c in candidates:
+                    p.apply(graph, c)
         return graph
 
 
