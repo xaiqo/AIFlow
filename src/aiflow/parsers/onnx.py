@@ -7,7 +7,7 @@ from onnx import numpy_helper
 
 from aiflow.ir import Graph, GraphValidator, Node, Tensor, infer_graph
 
-_DTYPE_MAP = {
+_DTYPE_MAP: dict[int, str] = {
     onnx.TensorProto.FLOAT: "float32",
     onnx.TensorProto.UINT8: "uint8",
     onnx.TensorProto.INT8: "int8",
@@ -26,7 +26,7 @@ _DTYPE_MAP = {
 
 def _dtype_from_value_info(vi: onnx.ValueInfoProto) -> str | None:
     t = vi.type.tensor_type
-    elem = t.elem_type
+    elem: int = int(t.elem_type)
     return _DTYPE_MAP.get(elem)
 
 
