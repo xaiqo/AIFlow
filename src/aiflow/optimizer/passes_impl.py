@@ -4,7 +4,7 @@ from collections.abc import Iterable
 
 import numpy as np
 
-from aiflow.ir import build_consumer_map
+from aiflow.ir import build_consumer_map, find_linear_chains
 from aiflow.ir.graph import Graph
 from aiflow.optimizer.passes import Pass
 
@@ -106,3 +106,30 @@ class DeadCodeEliminationPass(Pass):
         # Remove nodes in reverse order to keep indices stable
         for idx in sorted(candidate, reverse=True):
             del graph.nodes[idx]
+
+
+class FusionCBRPass(Pass):
+    """
+    Detect Conv -> BatchNormalization -> Relu linear chains.
+    Matcher-only: returns candidate index chains; no rewrites yet.
+    """
+
+    def match(self, graph: Graph) -> Iterable[list[int]]:
+        candidates: list[list[int]] = []
+        chains = find_linear_chains(graph, ["Conv", "BatchNormalization", "Relu"])
+        graph_outputs = set(graph.outputs)
+        for chain in chains:
+            conv_idx, bn_idx, relu_idx = chain
+            conv_outs = graph.nodes[conv_idx].outputs
+            bn_outs = graph.nodes[bn_idx].outputs
+            if not conv_outs or not bn_outs:
+                continue
+            # Ensure intermediate tensors are not graph outputs
+            if conv_outs[0] in graph_outputs or bn_outs[0] in graph_outputs:
+                continue
+            candidates.append(chain)
+        return candidates
+
+    def apply(self, graph: Graph, candidate: list[int]) -> None:
+        # No-op for this commit. Transformation will follow in the next step.
+        return
