@@ -35,6 +35,9 @@ def test_rewrite_conv_bn_relu_to_fused_conv() -> None:
     # tensors
     for name in ["x", "w", "b", "y1", "y2", "y3", "s", "bb", "m", "v"]:
         g.add_tensor(t(name, [1]))
+    # Mark BN params as constants to allow fusion
+    for name in ["s", "bb", "m", "v"]:
+        g.tensors[name].metadata["const"] = [1]
     # nodes: Conv -> BN -> Relu
     g.add_node(Node("Conv", ["x", "w", "b"], ["y1"], attributes={"strides": [1, 1]}))
     g.add_node(
@@ -72,6 +75,9 @@ def test_pipeline_toggle_enables_fusion() -> None:
     g = Graph()
     for name in ["x", "w", "b", "y1", "y2", "y3", "s", "bb", "m", "v"]:
         g.add_tensor(t(name, [1]))
+    # Mark BN params as constants to allow fusion when enabled
+    for name in ["s", "bb", "m", "v"]:
+        g.tensors[name].metadata["const"] = [1]
     g.add_node(Node("Conv", ["x", "w", "b"], ["y1"]))
     g.add_node(Node("BatchNormalization", ["y1", "s", "bb", "m", "v"], ["y2"]))
     g.add_node(Node("Relu", ["y2"], ["y3"]))
@@ -135,5 +141,62 @@ def test_no_rewrite_when_bn_params_missing() -> None:
     if matches:
         FusionCBRPass().apply(g, matches[0])
     assert [n.op_type for n in g.nodes] == ["Conv", "BatchNormalization", "Relu"]
+
+
+def test_no_rewrite_when_bn_params_not_constant() -> None:
+    g = Graph()
+    # tensors (BN params lack const metadata)
+    for name in ["x", "w", "b", "y1", "y2", "y3", "s", "bb", "m", "v"]:
+        g.add_tensor(t(name, [1]))
+    g.add_node(Node("Conv", ["x", "w", "b"], ["y1"]))
+    g.add_node(Node("BatchNormalization", ["y1", "s", "bb", "m", "v"], ["y2"]))
+    g.add_node(Node("Relu", ["y2"], ["y3"]))
+    g.outputs = ["y3"]
+    matches = list(FusionCBRPass().match(g))
+    if matches:
+        FusionCBRPass().apply(g, matches[0])
+    assert [n.op_type for n in g.nodes] == ["Conv", "BatchNormalization", "Relu"]
+
+
+def test_conv_attributes_preserved_after_fusion() -> None:
+    g = Graph()
+    for name in ["x", "w", "b", "y1", "y2", "y3", "s", "bb", "m", "v"]:
+        g.add_tensor(t(name, [1]))
+    # Mark BN params as constants so fusion can proceed
+    for name in ["s", "bb", "m", "v"]:
+        g.tensors[name].metadata["const"] = [1]
+    conv_attrs = {"strides": [1, 2], "pads": [1, 1, 1, 1], "dilations": [1, 1], "groups": 1}
+    g.add_node(Node("Conv", ["x", "w", "b"], ["y1"], attributes=dict(conv_attrs)))
+    g.add_node(Node("BatchNormalization", ["y1", "s", "bb", "m", "v"], ["y2"]))
+    g.add_node(Node("Relu", ["y2"], ["y3"]))
+    g.outputs = ["y3"]
+
+    matches = list(FusionCBRPass().match(g))
+    assert matches
+    FusionCBRPass().apply(g, matches[0])
+    assert len(g.nodes) == 1
+    assert g.nodes[0].attributes == conv_attrs
+
+
+def test_output_shape_unchanged_after_fusion() -> None:
+    g = Graph()
+    # Provide shapes upfront; we don't rely on Conv inference here
+    g.add_tensor(Tensor(name="x", dtype="float32", shape=[1, 3, 4, 4]))
+    g.add_tensor(Tensor(name="w", dtype="float32", shape=[3, 3, 3, 3]))
+    g.add_tensor(Tensor(name="b", dtype="float32", shape=[3]))
+    g.add_tensor(Tensor(name="y1", dtype="float32", shape=[1, 3, 4, 4]))
+    g.add_tensor(Tensor(name="y2", dtype="float32", shape=[1, 3, 4, 4]))
+    g.add_tensor(Tensor(name="y3", dtype="float32", shape=[1, 3, 4, 4]))
+    for name in ["s", "bb", "m", "v"]:
+        g.add_tensor(Tensor(name=name, dtype="float32", shape=[3], metadata={"const": [1, 1, 1]}))
+    g.add_node(Node("Conv", ["x", "w", "b"], ["y1"]))
+    g.add_node(Node("BatchNormalization", ["y1", "s", "bb", "m", "v"], ["y2"]))
+    g.add_node(Node("Relu", ["y2"], ["y3"]))
+    g.outputs = ["y3"]
+
+    pre_shape = list(g.tensors["y3"].shape)
+    FusionCBRPass().apply(g, [0, 1, 2])
+    post_shape = list(g.tensors["y3"].shape)
+    assert pre_shape == post_shape
 
 

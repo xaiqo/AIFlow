@@ -137,6 +137,10 @@ class FusionCBRPass(Pass):
         bn = graph.nodes[bn_idx]
         relu = graph.nodes[relu_idx]
 
+        # Guardrails: Conv should have standard 3 inputs (x, w, b) for this MVP.
+        if len(conv.inputs) != 3:
+            return
+
         # BN inputs convention: [input, scale, bias, mean, var]
         if len(bn.inputs) < 5:
             return  # cannot fuse without BN params
@@ -146,6 +150,12 @@ class FusionCBRPass(Pass):
             bn.inputs[3],
             bn.inputs[4],
         )
+        # Ensure BN params are constants (from initializers) to allow folding
+        if any(
+            _get_const_tensor(graph, name) is None
+            for name in (scale_name, bias_name, mean_name, var_name)
+        ):
+            return
 
         # Attach BN params (by reference names) and epsilon if present.
         fused_bn = {
