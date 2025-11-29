@@ -5,7 +5,9 @@ import pytest
 from aiflow.ir import Graph, GraphValidator, Node, Tensor, ValidationError
 
 
-def make_tensor(name: str, shape: list[int] | None = None, dtype: str = "float32") -> Tensor:
+def make_tensor(
+    name: str, shape: list[int] | None = None, dtype: str = "float32"
+) -> Tensor:
     actual_shape = shape if shape is not None else [1]
     return Tensor(name=name, dtype=dtype, shape=actual_shape)
 
@@ -76,5 +78,3 @@ def test_toposort_ordering() -> None:
     # order of nodes should respect dependencies
     assert order[0].op_type == "A"
     assert order[1].op_type == "B"
-
-

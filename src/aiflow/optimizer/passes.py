@@ -9,6 +9,7 @@ from aiflow.ir.graph import Graph
 
 class Candidate(Protocol):
     """A pass-specific candidate match object."""
+
     ...
 
 
@@ -40,7 +41,3 @@ class Pipeline:
                 for c in candidates:
                     p.apply(graph, c)
         return graph
-
-
-
-

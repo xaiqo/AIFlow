@@ -43,7 +43,9 @@ class Graph:
 class ValidationError(Exception):
     """Graph validation error with optional code and context."""
 
-    def __init__(self, message: str, code: str = "EVALID", node_index: int | None = None) -> None:
+    def __init__(
+        self, message: str, code: str = "EVALID", node_index: int | None = None
+    ) -> None:
         super().__init__(message)
         self.code = code
         self.node_index = node_index
@@ -66,9 +68,13 @@ class GraphValidator:
     def _validate_tensors_typed(self) -> None:
         for name, t in self.graph.tensors.items():
             if not t.dtype or not isinstance(t.dtype, str):
-                raise ValidationError(f"Tensor '{name}' missing dtype", code="ETENSOR_DTYPE")
+                raise ValidationError(
+                    f"Tensor '{name}' missing dtype", code="ETENSOR_DTYPE"
+                )
             if t.shape is None or not isinstance(t.shape, list):
-                raise ValidationError(f"Tensor '{name}' missing shape", code="ETENSOR_SHAPE")
+                raise ValidationError(
+                    f"Tensor '{name}' missing shape", code="ETENSOR_SHAPE"
+                )
             for dim in t.shape:
                 if not isinstance(dim, int) or dim <= 0:
                     raise ValidationError(
@@ -114,12 +120,18 @@ class GraphValidator:
     def _validate_inputs_outputs_exist(self) -> None:
         for name in self.graph.inputs:
             if name not in self.graph.tensors:
-                raise ValidationError(f"Graph input '{name}' missing tensor", code="EGRAPH_INPUT")
+                raise ValidationError(
+                    f"Graph input '{name}' missing tensor", code="EGRAPH_INPUT"
+                )
         for name in self.graph.outputs:
             if name not in self.graph.tensors:
-                raise ValidationError(f"Graph output '{name}' missing tensor", code="EGRAPH_OUTPUT")
+                raise ValidationError(
+                    f"Graph output '{name}' missing tensor", code="EGRAPH_OUTPUT"
+                )
 
-    def _topological_order(self, producer_map: dict[str, int] | None = None) -> list[int]:
+    def _topological_order(
+        self, producer_map: dict[str, int] | None = None
+    ) -> list[int]:
         """
         Return topological order of node indices. Raise ValidationError on cycles.
         """
@@ -157,7 +169,3 @@ class GraphValidator:
     def toposort(self) -> list[Node]:
         order = self._topological_order()
         return [self.graph.nodes[i] for i in order]
-
-
-
-

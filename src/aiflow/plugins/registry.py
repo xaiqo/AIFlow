@@ -29,8 +29,5 @@ class Registry:
             raise KeyError(f"Component not found: {kind}:{name}")
         return item.factory()
 
+
 global_registry = Registry()
-
-
-
-
