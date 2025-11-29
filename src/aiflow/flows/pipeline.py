@@ -8,6 +8,7 @@ import boto3
 from prefect import flow, get_run_logger, task
 
 from aiflow.ir import Graph
+from aiflow.optimizer import build_default_pipeline
 from aiflow.parsers.onnx import OnnxParser
 
 
@@ -44,7 +45,8 @@ def parse_model(local_path: Path) -> Graph:
 def optimize_graph(ir: Graph) -> Graph:
     logger = get_run_logger()
     logger.info("Running graph optimization passes")
-    return ir
+    pipeline = build_default_pipeline(enable_fusion=True)
+    return pipeline.run(ir)
 
 
 @task
