@@ -62,7 +62,7 @@ def profile_artifacts(artifact: dict[str, Any]) -> dict[str, float]:
 
 
 @task
-def autotune(ir: dict[str, Any], metrics: dict[str, float]) -> dict[str, Any]:
+def autotune(ir: Graph, metrics: dict[str, float]) -> dict[str, Any]:
     logger = get_run_logger()
     logger.info("Auto-tuning configuration")
     return {"best_config": {}, "metrics": metrics}
