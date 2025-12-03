@@ -33,8 +33,12 @@ class Pipeline:
 
     def run(self, graph: Graph) -> Graph:
         for p in self._passes:
-            # Run each pass to a fixed point
+            # Run each pass to a fixed point (with safety cap)
+            iterations = 0
             while True:
+                iterations += 1
+                if iterations > 100:
+                    break
                 candidates = list(p.match(graph))
                 if not candidates:
                     break
