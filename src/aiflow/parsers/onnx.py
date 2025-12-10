@@ -156,7 +156,7 @@ class OnnxParser:
     def _load_model(self, model_or_path: Any) -> onnx.ModelProto:
         if isinstance(model_or_path, onnx.ModelProto):
             return model_or_path
-        if isinstance(model_or_path, (bytes, bytearray)):
+        if isinstance(model_or_path, bytes | bytearray):
             return onnx.load_model_from_string(model_or_path)
         if isinstance(model_or_path, str):
             return onnx.load(model_or_path)

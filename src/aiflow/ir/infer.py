@@ -189,6 +189,11 @@ def _pool2d_out_dim(input_dim: int, k: int, s: int, p0: int, p1: int) -> int:
     return (input_dim + p0 + p1 - k) // s + 1
 
 
+def _conv2d_out_dim(input_dim: int, k: int, s: int, d: int, p0: int, p1: int) -> int:
+    # floor((in + pad0 + pad1 - dilation*(k - 1) - 1)/stride + 1)
+    return (input_dim + p0 + p1 - d * (k - 1) - 1) // s + 1
+
+
 def _get_list_attr(node: Node, name: str, default: list[int]) -> list[int]:
     val = node.attributes.get(name)
     if val is None:
@@ -221,6 +226,51 @@ def _pool2d_shape(
     w_out = _pool2d_out_dim(w_in, k_w, s_w, p_left, p_right)
     return list(x_shape[:-2]) + [h_out, w_out]
 
+
+@register_shape_inference("Conv")
+def infer_conv(graph: Graph, node: Node) -> None:
+    if len(node.inputs) < 2 or len(node.outputs) != 1:
+        raise InferenceError("Conv expects at least 2 inputs and 1 output", code="ECONV_ARITY")
+    x = graph.tensors[node.inputs[0]]
+    w = graph.tensors[node.inputs[1]]
+    out = graph.tensors[node.outputs[0]]
+    if len(x.shape) != 4 or len(w.shape) != 4:
+        raise InferenceError("Conv expects rank-4 tensors (NCHW, OIHW)", code="ECONV_RANK")
+
+    n, c_in, h_in, w_in = x.shape
+    c_out, c_per_group, k_h, k_w = w.shape
+
+    groups = node.attributes.get("groups", 1)
+    if not isinstance(groups, int) or groups <= 0:
+        raise InferenceError("Conv groups must be positive integer", code="ECONV_GROUPS")
+    if c_in % groups != 0:
+        raise InferenceError("Conv input channels not divisible by groups", code="ECONV_GROUPS_DIV")
+    if c_per_group * groups != c_in:
+        # According to ONNX, W shape is [Cout, Cin/groups, kH, kW]
+        raise InferenceError("Conv weight shape mismatch Cin/groups", code="ECONV_W_SHAPE")
+
+    strides = _get_list_attr(node, "strides", [1, 1])
+    dilations = _get_list_attr(node, "dilations", [1, 1])
+    pads = _get_list_attr(node, "pads", [0, 0, 0, 0])  # [pad_top, pad_left, pad_bottom, pad_right]
+
+    if len(strides) != 2 or len(dilations) != 2:
+        raise InferenceError("Conv strides/dilations must be length-2", code="ECONV_ATTRS")
+    if len(pads) not in (2, 4):
+        raise InferenceError("Conv pads must be length-2 or -4", code="ECONV_PADS")
+
+    s_h, s_w = strides
+    d_h, d_w = dilations
+    if len(pads) == 2:
+        p_top = p_bottom = pads[0]
+        p_left = p_right = pads[1]
+    else:
+        p_top, p_left, p_bottom, p_right = pads
+
+    h_out = _conv2d_out_dim(h_in, k_h, s_h, d_h, p_top, p_bottom)
+    w_out = _conv2d_out_dim(w_in, k_w, s_w, d_w, p_left, p_right)
+
+    out.shape = [n, c_out, h_out, w_out]
+    out.dtype = x.dtype
 
 @register_shape_inference("MaxPool")
 def infer_maxpool(graph: Graph, node: Node) -> None:
